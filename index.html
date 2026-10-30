@@ -108,7 +108,7 @@
       display: flex;
     }
 
-    /* المستوى الأول - تعديل الاتجاه ليبدأ من اليسار */
+    /* المستوى الأول */
     .grid-30 {
       direction: ltr;
       display: grid;
@@ -158,7 +158,7 @@
       color: #3fb950;
     }
 
-    /* المستوى الثاني - تعديل الاتجاه ليبدأ من اليسار كجدول حقيقي */
+    /* المستوى الثاني */
     .periodic-table-wrapper {
       width: 100%;
       overflow-x: auto;
@@ -311,4 +311,51 @@
         <span>العنصر المطلوب وضعه:</span>
         <div id="drag-token" class="drag-token" draggable="true"></div>
       </div>
-      <p style="font-size: 0.8rem
+      <p style="font-size: 0.8rem; color: #8b949e; margin-bottom: 8px;">(يمكنك السحب أو النقر على العنصر ثم النقر على المكان الفارغ مباشرة للموبايل)</p>
+      <div class="periodic-table-wrapper">
+        <div class="periodic-grid" id="grid-l2"></div>
+      </div>
+      <div class="score-board" id="score-l2"></div>
+    </div>
+
+    <!-- المستوى الثالث -->
+    <div id="level-3" class="level-view">
+      <div class="states-options">
+        <button class="state-btn solid" onclick="checkStateAnswer('solid')">🪨 صلب</button>
+        <button class="state-btn liquid" onclick="checkStateAnswer('liquid')">💧 سائل</button>
+        <button class="state-btn gas" onclick="checkStateAnswer('gas')">💨 غاز</button>
+      </div>
+      <div class="score-board" id="score-l3"></div>
+    </div>
+  </div>
+
+  <script>
+    let audioCtx = null;
+    function getAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function playBeep(freq, type = 'sine', duration = 0.15) {
+      try {
+        const ctx = getAudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+      } catch (e) {
+        console.warn("Audio unavailable:", e);
+      }
+    }
+    const playSuccessSound = () => { playBeep(52
