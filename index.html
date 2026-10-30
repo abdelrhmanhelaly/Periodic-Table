@@ -108,8 +108,9 @@
       display: flex;
     }
 
-    /* المستوى الأول */
+    /* المستوى الأول - تعديل الاتجاه ليبدأ من اليسار */
     .grid-30 {
+      direction: ltr;
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
       gap: 10px;
@@ -157,14 +158,16 @@
       color: #3fb950;
     }
 
-    /* المستوى الثاني */
+    /* المستوى الثاني - تعديل الاتجاه ليبدأ من اليسار كجدول حقيقي */
     .periodic-table-wrapper {
       width: 100%;
       overflow-x: auto;
       padding-bottom: 10px;
+      direction: ltr;
     }
 
     .periodic-grid {
+      direction: ltr;
       display: grid;
       grid-template-columns: repeat(18, 38px);
       grid-template-rows: repeat(7, 38px);
@@ -271,7 +274,6 @@
       color: #8b949e;
     }
 
-    /* اهتزاز الخطأ */
     @keyframes shake {
       0%, 100% { transform: translateX(0); }
       20%, 60% { transform: translateX(-6px); }
@@ -306,288 +308,7 @@
     <!-- المستوى الثاني -->
     <div id="level-2" class="level-view">
       <div class="current-draggable-item">
-        <span>العنصر المطلوب سحبه:</span>
+        <span>العنصر المطلوب وضعه:</span>
         <div id="drag-token" class="drag-token" draggable="true"></div>
       </div>
-      <p style="font-size: 0.8rem; color: #8b949e; margin-bottom: 8px;">(يمكنك السحب أو النقر على العنصر ثم النقر على المكان الفارغ مباشرة للموبايل)</p>
-      <div class="periodic-table-wrapper">
-        <div class="periodic-grid" id="grid-l2"></div>
-      </div>
-      <div class="score-board" id="score-l2"></div>
-    </div>
-
-    <!-- المستوى الثالث -->
-    <div id="level-3" class="level-view">
-      <div class="states-options">
-        <button class="state-btn solid" onclick="checkStateAnswer('solid')">🪨 صلب</button>
-        <button class="state-btn liquid" onclick="checkStateAnswer('liquid')">💧 سائل</button>
-        <button class="state-btn gas" onclick="checkStateAnswer('gas')">💨 غاز</button>
-      </div>
-      <div class="score-board" id="score-l3"></div>
-    </div>
-  </div>
-
-  <script>
-    /* الصوتيات المضمنة عبر Web Audio API */
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    function playBeep(freq, type = 'sine', duration = 0.15) {
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = type;
-      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start();
-      osc.stop(audioCtx.currentTime + duration);
-    }
-    const playSuccessSound = () => { playBeep(523.25); setTimeout(() => playBeep(659.25), 80); setTimeout(() => playBeep(783.99), 160); };
-    const playErrorSound = () => { playBeep(180, 'sawtooth', 0.25); };
-
-    /* بيانات العناصر */
-    const elementsData = [
-      { n: 1, s: "H", name: "هيدروجين", r: 1, c: 1, state: "gas", g: "nonmetal" },
-      { n: 2, s: "He", name: "هيليوم", r: 1, c: 18, state: "gas", g: "noble" },
-      { n: 3, s: "Li", name: "ليثيوم", r: 2, c: 1, state: "solid", g: "alkali" },
-      { n: 4, s: "Be", name: "بيريليوم", r: 2, c: 2, state: "solid", g: "alkaline" },
-      { n: 5, s: "B", name: "بورون", r: 2, c: 13, state: "solid", g: "metalloid" },
-      { n: 6, s: "C", name: "كربون", r: 2, c: 14, state: "solid", g: "nonmetal" },
-      { n: 7, s: "N", name: "نيتروجين", r: 2, c: 15, state: "gas", g: "nonmetal" },
-      { n: 8, s: "O", name: "أكسجين", r: 2, c: 16, state: "gas", g: "nonmetal" },
-      { n: 9, s: "F", name: "فلور", r: 2, c: 17, state: "gas", g: "halogen" },
-      { n: 10, s: "Ne", name: "نيون", r: 2, c: 18, state: "gas", g: "noble" },
-      { n: 11, s: "Na", name: "صوديوم", r: 3, c: 1, state: "solid", g: "alkali" },
-      { n: 12, s: "Mg", name: "ماغنسيوم", r: 3, c: 2, state: "solid", g: "alkaline" },
-      { n: 13, s: "Al", name: "ألومنيوم", r: 3, c: 13, state: "solid", g: "metal" },
-      { n: 14, s: "Si", name: "سيليكون", r: 3, c: 14, state: "solid", g: "metalloid" },
-      { n: 15, s: "P", name: "فوسفور", r: 3, c: 15, state: "solid", g: "nonmetal" },
-      { n: 16, s: "S", name: "كبريت", r: 3, c: 16, state: "solid", g: "nonmetal" },
-      { n: 17, s: "Cl", name: "كلور", r: 3, c: 17, state: "gas", g: "halogen" },
-      { n: 18, s: "Ar", name: "أرجون", r: 3, c: 18, state: "gas", g: "noble" },
-      { n: 19, s: "K", name: "بوتاسيوم", r: 4, c: 1, state: "solid", g: "alkali" },
-      { n: 20, s: "Ca", name: "كالسيوم", r: 4, c: 2, state: "solid", g: "alkaline" },
-      { n: 21, s: "Sc", name: "سكانديوم", r: 4, c: 3, state: "solid", g: "transition" },
-      { n: 22, s: "Ti", name: "تيتانيوم", r: 4, c: 4, state: "solid", g: "transition" },
-      { n: 23, s: "V", name: "فاناديوم", r: 4, c: 5, state: "solid", g: "transition" },
-      { n: 24, s: "Cr", name: "كروم", r: 4, c: 6, state: "solid", g: "transition" },
-      { n: 25, s: "Mn", name: "منجنيز", r: 4, c: 7, state: "solid", g: "transition" },
-      { n: 26, s: "Fe", name: "حديد", r: 4, c: 8, state: "solid", g: "transition" },
-      { n: 27, s: "Co", name: "كوبالت", r: 4, c: 9, state: "solid", g: "transition" },
-      { n: 28, s: "Ni", name: "نيكل", r: 4, c: 10, state: "solid", g: "transition" },
-      { n: 29, s: "Cu", name: "نحاس", r: 4, c: 11, state: "solid", g: "transition" },
-      { n: 30, s: "Zn", name: "خارصين", r: 4, c: 12, state: "solid", g: "transition" },
-      { n: 35, s: "Br", name: "بروم", r: 4, c: 17, state: "liquid", g: "halogen" },
-      { n: 36, s: "Kr", name: "كريبتون", r: 4, c: 18, state: "gas", g: "noble" },
-      { n: 37, s: "Rb", name: "روبيديوم", r: 5, c: 1, state: "solid", g: "alkali" },
-      { n: 38, s: "Sr", name: "سترونشيوم", r: 5, c: 2, state: "solid", g: "alkaline" },
-      { n: 53, s: "I", name: "يود", r: 5, c: 17, state: "solid", g: "halogen" },
-      { n: 54, s: "Xe", name: "زينون", r: 5, c: 18, state: "gas", g: "noble" },
-      { n: 55, s: "Cs", name: "سيزيوم", r: 6, c: 1, state: "solid", g: "alkali" },
-      { n: 56, s: "Ba", name: "باريوم", r: 6, c: 2, state: "solid", g: "alkaline" },
-      { n: 80, s: "Hg", name: "زئبق", r: 6, c: 12, state: "liquid", g: "transition" },
-      { n: 85, s: "At", name: "أستاتين", r: 6, c: 17, state: "solid", g: "halogen" },
-      { n: 86, s: "Rn", name: "رادون", r: 6, c: 18, state: "gas", g: "noble" },
-      { n: 87, s: "Fr", name: "فرانسيوم", r: 7, c: 1, state: "solid", g: "alkali" },
-      { n: 88, s: "Ra", name: "راديوم", r: 7, c: 2, state: "solid", g: "alkaline" }
-    ];
-
-    let currentLevel = 1;
-    const promptBox = document.getElementById("prompt-box");
-
-    function triggerShake() {
-      const container = document.querySelector('.game-container');
-      container.classList.remove('shake');
-      void container.offsetWidth;
-      container.classList.add('shake');
-    }
-
-    function switchLevel(lvl) {
-      currentLevel = lvl;
-      document.querySelectorAll('.tab-btn').forEach((btn, idx) => {
-        btn.classList.toggle('active', idx + 1 === lvl);
-      });
-      document.querySelectorAll('.level-view').forEach((view, idx) => {
-        view.classList.toggle('active', idx + 1 === lvl);
-      });
-
-      if (lvl === 1) initLevel1();
-      if (lvl === 2) initLevel2();
-      if (lvl === 3) initLevel3();
-    }
-
-    /* ================= منطق المستوى 1 ================= */
-    let l1Remaining = [], l1Current = null, l1Count = 0;
-    function initLevel1() {
-      l1Remaining = [...elementsData.slice(0, 30)].sort(() => Math.random() - 0.5);
-      l1Count = 0;
-      const grid = document.getElementById("grid-l1");
-      grid.innerHTML = "";
-      elementsData.slice(0, 30).forEach(el => {
-        const card = document.createElement("div");
-        card.className = "elem-card";
-        card.id = `card-l1-${el.n}`;
-        card.innerHTML = `<span class="symbol">${el.s}</span><span class="num">${el.n}</span>`;
-        card.onclick = () => handleL1Selection(el);
-        grid.appendChild(card);
-      });
-      nextL1Turn();
-    }
-
-    function nextL1Turn() {
-      if (l1Remaining.length === 0) {
-        promptBox.textContent = "تهانينا! أكملت المستوى الأول بنجاح 🎉";
-        playSuccessSound();
-        return;
-      }
-      l1Current = l1Remaining.pop();
-      promptBox.textContent = `ابحث عن عنصر: ${l1Current.name}`;
-      document.getElementById("score-l1").textContent = `المتبقي: ${l1Remaining.length + 1} / 30`;
-    }
-
-    function handleL1Selection(el) {
-      if (el.n === l1Current.n) {
-        playSuccessSound();
-        document.getElementById(`card-l1-${el.n}`).classList.add("solved");
-        l1Count++;
-        nextL1Turn();
-      } else {
-        playErrorSound();
-        triggerShake();
-      }
-    }
-
-    /* ================= منطق المستوى 2 ================= */
-    let l2TargetElements = [], l2CurrentElement = null, selectedForTap = null;
-    function initLevel2() {
-      // العناصر المطلوب إخفاؤها وسحبها: الدورات 1-4 كاملة + كمالة الأقلاء والهالوجينات والخاملة
-      l2TargetElements = elementsData.filter(el => {
-        const isFirst4Rows = el.r <= 4;
-        const isSpecialGroup = (el.c === 1 || el.c === 17 || el.c === 18);
-        return isFirst4Rows || isSpecialGroup;
-      }).sort(() => Math.random() - 0.5);
-
-      const grid = document.getElementById("grid-l2");
-      grid.innerHTML = "";
-
-      for (let r = 1; r <= 7; r++) {
-        for (let c = 1; c <= 18; c++) {
-          const cell = document.createElement("div");
-          cell.className = "pt-cell";
-          const match = elementsData.find(e => e.r === r && e.c === c);
-
-          if (match) {
-            const isTarget = l2TargetElements.some(t => t.n === match.n);
-            if (isTarget) {
-              cell.classList.add("dropzone");
-              cell.dataset.expected = match.n;
-              cell.ondragover = (e) => { e.preventDefault(); cell.classList.add("dragover"); };
-              cell.ondragleave = () => { cell.classList.remove("dragover"); };
-              cell.ondrop = (e) => handleL2Drop(e, match.n, cell);
-              cell.onclick = () => handleL2TapTarget(match.n, cell);
-            } else {
-              cell.classList.add("filled");
-              cell.innerHTML = match.s;
-            }
-          }
-          grid.appendChild(cell);
-        }
-      }
-      nextL2Turn();
-    }
-
-    function nextL2Turn() {
-      if (l2TargetElements.length === 0) {
-        promptBox.textContent = "عظيم! ركّبت كل العناصر بمكانها في الجدول الدوري 🎉";
-        document.getElementById("drag-token").style.display = "none";
-        playSuccessSound();
-        return;
-      }
-      l2CurrentElement = l2TargetElements.pop();
-      const token = document.getElementById("drag-token");
-      token.style.display = "flex";
-      token.textContent = l2CurrentElement.s;
-      promptBox.textContent = `اسحب عنصر (${l2CurrentElement.name} - ${l2CurrentElement.s}) إلى مكانه`;
-
-      token.ondragstart = (e) => {
-        e.dataTransfer.setData("text/plain", l2CurrentElement.n);
-      };
-      token.onclick = () => {
-        selectedForTap = l2CurrentElement;
-        token.style.outline = "3px solid #58a6ff";
-      };
-      document.getElementById("score-l2").textContent = `المتبقي للتركيب: ${l2TargetElements.length + 1}`;
-    }
-
-    function handleL2Drop(e, expectedNum, cell) {
-      e.preventDefault();
-      cell.classList.remove("dragover");
-      const droppedNum = parseInt(e.dataTransfer.getData("text/plain"));
-      validateL2Placement(droppedNum, expectedNum, cell);
-    }
-
-    function handleL2TapTarget(expectedNum, cell) {
-      if (!selectedForTap) return;
-      validateL2Placement(selectedForTap.n, expectedNum, cell);
-      document.getElementById("drag-token").style.outline = "none";
-      selectedForTap = null;
-    }
-
-    function validateL2Placement(placedNum, expectedNum, cell) {
-      if (placedNum === expectedNum) {
-        playSuccessSound();
-        cell.classList.remove("dropzone");
-        cell.classList.add("solved");
-        cell.innerHTML = l2CurrentElement.s;
-        nextL2Turn();
-      } else {
-        playErrorSound();
-        triggerShake();
-        l2TargetElements.unshift(l2CurrentElement); // إعادة العنصر ليعيده اللاعب
-        nextL2Turn();
-      }
-    }
-
-    /* ================= منطق المستوى 3 ================= */
-    let l3Elements = [], l3Current = null, l3Index = 0;
-    function initLevel3() {
-      // العناصر المطلوبة: الأقلاء، الأقلاء الأرضية، الهالوجينات، الخاملة، والحديد، النحاس، الزئبق
-      l3Elements = elementsData.filter(el => {
-        const allowedGroups = ["alkali", "alkaline", "halogen", "noble"];
-        const specificTransitions = ["Fe", "Cu", "Hg"];
-        return allowedGroups.includes(el.g) || specificTransitions.includes(el.s);
-      }).sort(() => Math.random() - 0.5);
-
-      l3Index = 0;
-      nextL3Turn();
-    }
-
-    function nextL3Turn() {
-      if (l3Index >= l3Elements.length) {
-        promptBox.textContent = "ممتاز! أتقنت تصنيف حالات المادة لجميع العناصر 🎉";
-        playSuccessSound();
-        return;
-      }
-      l3Current = l3Elements[l3Index];
-      promptBox.textContent = `ما هي حالة عنصر (${l3Current.name} - ${l3Current.s}) في درجة حرارة الغرفة؟`;
-      document.getElementById("score-l3").textContent = `السؤال: ${l3Index + 1} / ${l3Elements.length}`;
-    }
-
-    function checkStateAnswer(chosenState) {
-      if (!l3Current) return;
-      if (chosenState === l3Current.state) {
-        playSuccessSound();
-        l3Index++;
-        nextL3Turn();
-      } else {
-        playErrorSound();
-        triggerShake();
-      }
-    }
-
-    // تشغيل المستوى الأول عند البدء
-    initLevel1();
-  </script>
-</body>
-</html>
+      <p style="font-size: 0.8rem
